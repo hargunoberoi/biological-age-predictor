@@ -62,7 +62,6 @@ venv.bak/
 .vscode/
 
 # Project specific
-age_predictor.pth
 *.png
 temp_*.csv
 
