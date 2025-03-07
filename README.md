@@ -5,37 +5,90 @@ This repository contains a full-stack application for predicting age based on he
 ## Project Structure
 
 ```
-├── frontend/                # Next.js frontend application
-│   ├── pages/               # Next.js pages
-│   ├── styles/              # CSS styles
-│   ├── package.json         # Frontend dependencies
-│   └── ...
-├── endpoint.py              # FastAPI backend server
-├── model.py                 # Neural network model definition
-├── age_predictor.pth        # Trained model weights
-├── train.py                 # Model training script
-├── inference.py             # Model inference utilities
-├── requirements.txt         # Python dependencies
-└── demo.py                  # Demo application
+├── app/                    # Containerized application
+│   ├── frontend/           # Next.js frontend application
+│   ├── backend/            # FastAPI backend server
+│   └── docker-compose.yml  # Docker Compose configuration
+├── frontend/               # Development version of Next.js frontend
+├── endpoint.py             # Development version of FastAPI backend
+├── model.py                # Neural network model definition
+├── age_predictor.pth       # Trained model weights
+├── train.py                # Model training script
+├── inference.py            # Model inference utilities
+├── requirements.txt        # Python dependencies
+└── demo.py                 # Demo application
 ```
 
-## Backend (FastAPI)
+## Docker Deployment (Recommended)
+
+The easiest way to run the application is using Docker Compose, which will set up both the frontend and backend services in containers.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+### Running with Docker Compose
+
+1. Navigate to the app directory:
+
+   ```bash
+   cd app
+   ```
+
+2. Start the application using Docker Compose:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+3. Access the application:
+
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+4. To stop the application:
+   ```bash
+   docker-compose down
+   ```
+
+### Docker Container Details
+
+The application consists of two Docker containers:
+
+1. **Backend (age-predictor-backend)**
+
+   - FastAPI server running on port 8000
+   - Provides the prediction API
+   - Health check endpoint at /health
+
+2. **Frontend (age-predictor-frontend)**
+   - Next.js application running on port 3000
+   - User interface for the age prediction service
+   - Communicates with the backend API
+
+## Local Development Setup
+
+If you prefer to run the application without Docker for development purposes, follow these instructions:
+
+### Backend (FastAPI)
 
 The backend is built with FastAPI, providing a RESTful API for age prediction.
 
-### Features
+#### Features
 
 - RESTful API for age prediction
 - CORS middleware for cross-origin requests
 - Health check endpoint
 - Neural network model for age prediction
 
-### API Endpoints
+#### API Endpoints
 
 - `POST /predict`: Predicts age based on input features
 - `GET /health`: Health check endpoint
 
-### Technologies Used
+#### Technologies Used
 
 - FastAPI
 - PyTorch
@@ -43,17 +96,36 @@ The backend is built with FastAPI, providing a RESTful API for age prediction.
 - NumPy
 - Uvicorn (ASGI server)
 
-### Running the Backend
+#### Running the Backend
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+There are two ways to run the backend:
 
-# Start the server
-uvicorn endpoint:app --reload
-```
+1. **Using the root endpoint.py file**:
 
-## Frontend (Next.js)
+   ```bash
+   # Install dependencies
+   pip install -r requirements.txt
+
+   # Start the server from the project root
+   uvicorn endpoint:app --reload
+   ```
+
+2. **Using the app/backend/endpoint.py file**:
+
+   ```bash
+   # Navigate to the backend directory
+   cd app/backend
+
+   # Install dependencies
+   pip install -r requirements.txt
+
+   # Start the server
+   uvicorn endpoint:app --reload
+   ```
+
+The API will be available at http://localhost:8000 and the API documentation at http://localhost:8000/docs.
+
+### Frontend (Next.js)
 
 The frontend is built with Next.js, providing a user-friendly interface for interacting with the age prediction model.
 

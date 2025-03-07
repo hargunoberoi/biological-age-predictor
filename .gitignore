@@ -90,6 +90,32 @@ frontend/coverage/
 frontend/.swc/
 frontend/.env*.local
 
+# App directory structure
+app/frontend/node_modules/
+app/frontend/.next/
+app/frontend/out/
+app/frontend/.cache/
+app/frontend/build/
+app/frontend/dist/
+app/frontend/.vercel/
+app/frontend/.turbo/
+app/frontend/coverage/
+app/frontend/.swc/
+app/frontend/.env*.local
+
+# Backend specific
+app/backend/__pycache__/
+app/backend/*.py[cod]
+app/backend/*$py.class
+app/backend/.env
+app/backend/.venv
+app/backend/env/
+app/backend/venv/
+app/backend/ENV/
+app/backend/env.bak/
+app/backend/venv.bak/
+app/backend/.pytest_cache/
+
 # Environment variables for Next.js
 .env.local
 .env.development.local
@@ -107,6 +133,7 @@ $RECYCLE.BIN/
 # Docker
 .dockerignore
 .docker/
+docker-compose.override.yml
 
 # Build
 /.cache/
