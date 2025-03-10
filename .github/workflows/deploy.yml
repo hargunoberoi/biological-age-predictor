@@ -43,6 +43,12 @@ jobs:
 
             cd app
 
+            # Create/update .env file with secrets
+            cat > .env << EOL
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            # Add any other environment variables as needed
+            EOL
+
             # Deploy with Docker Compose
             docker-compose down || true
             docker-compose up -d --build
