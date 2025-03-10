@@ -3,7 +3,7 @@ import Head from "next/head";
 import axios from "axios";
 
 // API configuration
-const API_URL = "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // Define the questions and their properties
 const questions = [
@@ -221,6 +221,9 @@ export default function Home() {
 
     setImageLoading(true);
     try {
+      // Log the API URL being used
+      console.log("Using API URL:", `${API_URL}/analyze-image`);
+
       // Create form data for file upload
       const formData = new FormData();
       formData.append("image", imageFile);
@@ -315,9 +318,24 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error analyzing image:", error);
+      // Log more detailed error information
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        console.error("Response headers:", error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("Request made but no response received:", error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error("Error setting up request:", error.message);
+      }
+
       setErrors({
         ...errors,
-        image: "Error analyzing image. Please try again.",
+        image: `Error analyzing image: ${error.message}. Please try again.`,
       });
     } finally {
       setImageLoading(false);

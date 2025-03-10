@@ -30,6 +30,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
+    expose_headers=["*"],  # Expose all headers
 )
 
 # Load model
@@ -147,7 +148,15 @@ async def predict(input_data: PredictionInput):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "model": "age_predictor.pth"}
+    """
+    Simple health check endpoint to verify API connectivity.
+    """
+    return {
+        "status": "ok", 
+        "api": "Age Predictor API", 
+        "version": "1.0.0",
+        "cors": "enabled"
+    }
 
 def encode_image(image_bytes):
     """Encode image bytes to base64"""
