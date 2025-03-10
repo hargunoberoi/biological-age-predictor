@@ -15,7 +15,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.commit_sha || 'main' }} # Use provided SHA or default to main
+          fetch-depth: 0 # Fetch all history so we can checkout any commit
+          ref: "main" # Always start with main
+
+      - name: Checkout specific commit if provided
+        if: github.event.inputs.commit_sha != ''
+        run: |
+          git checkout ${{ github.event.inputs.commit_sha }}
 
       - name: Deploy to Droplet
         uses: appleboy/ssh-action@master
