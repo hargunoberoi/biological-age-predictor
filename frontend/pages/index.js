@@ -485,7 +485,7 @@ export default function Home() {
                           className={`block w-full rounded-md border ${
                             errors[question.id]
                               ? "border-red-300"
-                              : autofilledFields.includes(question.id)
+                              : formData[question.id]
                               ? "border-green-300"
                               : "border-gray-300"
                           } shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2`}
@@ -510,19 +510,12 @@ export default function Home() {
                           className={`block w-full rounded-md border ${
                             errors[question.id]
                               ? "border-red-300"
-                              : autofilledFields.includes(question.id)
+                              : formData[question.id]
                               ? "border-green-300"
                               : "border-gray-300"
                           } shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2`}
                         />
                       )}
-
-                      {formData[question.id] &&
-                        !autofilledFields.includes(question.id) && (
-                          <p className="mt-1 text-sm text-orange-600 font-medium">
-                            *not updated - please verify this manually*
-                          </p>
-                        )}
 
                       {!formData[question.id] && (
                         <p className="mt-1 text-sm text-red-600 font-medium">

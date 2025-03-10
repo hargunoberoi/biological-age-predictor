@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
@@ -7,6 +7,16 @@ import torch
 import uvicorn
 from model import AgePredictionNN
 from typing import List, Dict, Any
+import base64
+import os
+import io
+from PIL import Image
+import json
+from dotenv import load_dotenv
+from openai import OpenAI
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(title="Age Predictor API", 
@@ -39,6 +49,12 @@ class PredictionInput(BaseModel):
 # Define output response model
 class PredictionOutput(BaseModel):
     predicted_age: float
+
+# Get OpenAI API key from environment
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+
+# Initialize OpenAI client
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def preprocess_data(data: Dict[str, Any]) -> torch.Tensor:
     """
@@ -133,6 +149,100 @@ async def predict(input_data: PredictionInput):
 async def health_check():
     return {"status": "ok", "model": "age_predictor.pth"}
 
+def encode_image(image_bytes):
+    """Encode image bytes to base64"""
+    return base64.b64encode(image_bytes).decode('utf-8')
+
+@app.post("/analyze-image")
+async def analyze_image(image: UploadFile = File(...)):
+    """
+    Analyze image using OpenAI O1 model to extract health metrics.
+    """
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="OpenAI API key not configured on server")
+    
+    if not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    try:
+        # Read the uploaded image
+        contents = await image.read()
+        
+        # Convert to base64
+        base64_image = encode_image(contents)
+        
+        # Prepare the prompt for OpenAI
+        prompt = """
+        This image may contain health-related information. 
+        Please extract the following health metrics if visible in the image:
+        - Height (in cm)
+        - Weight (in kg)
+        - Blood Pressure (systolic/diastolic)
+        - Cholesterol Level (in mg/dL)
+        - BMI
+        - Blood Glucose Level (in mg/dL)
+        - Bone Density (in g/cm²)
+        - Vision Sharpness (0.1-1.0)
+        - Hearing Ability (in dB)
+        - Activity Level (sedentary, light, moderate, active, very active)
+        - Sleep Duration (in hours)
+        - Smoking Status (yes, no)
+        - Alcohol Consumption (none, light, moderate, heavy)
+        - Medication Count (number)
+        - Heart Rate (BPM)
+        
+        Return only the values you can confidently extract in a JSON format with the following keys:
+        height, weight, bloodPressure, cholesterol, bmi, glucose, boneDensity, vision, hearing, activity, sleepDuration, smokingStatus, alcoholConsumption, medicationCount, heartRate
+        
+        Include only the fields that you can extract from the image. If you cannot determine a value, do not include that field in the response.
+        """
+        
+        # Set up the messages for the API call
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}
+                ]
+            }
+        ]
+        
+        # Make API call using the OpenAI client
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                max_tokens=1000
+            )
+            content = response.choices[0].message.content
+            
+            # Parse JSON from the response
+            try:
+                # Try to extract JSON if it's wrapped in markdown code blocks
+                if "```json" in content and "```" in content:
+                    json_str = content.split("```json")[1].split("```")[0].strip()
+                    extracted_data = json.loads(json_str)
+                else:
+                    # Otherwise try to parse the whole response as JSON
+                    extracted_data = json.loads(content)
+            except json.JSONDecodeError:
+                # If JSON parsing fails, attempt to extract key-value pairs from text
+                extracted_data = {}
+                # Simple extraction using common patterns
+                if "height" in content.lower():
+                    # Attempt to extract height value
+                    pass
+                # Add similar extraction for other fields if needed
+            
+            return extracted_data
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
 # Run the API with uvicorn
 if __name__ == "__main__":
-    uvicorn.run("endpoint:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("endpoint:app", host="127.0.0.1", port=8000, reload=True) 

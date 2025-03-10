@@ -72,19 +72,26 @@ The easiest way to run the application is using Docker Compose, which will set u
    cd app
    ```
 
-2. Start the application using Docker Compose:
+2. Create your environment file (if you haven't already):
 
    ```bash
-   docker-compose up -d --env-file .env
+   cp .env.example .env
+   # Edit .env to add your actual OpenAI API key
    ```
 
-3. Access the application:
+3. Start the application using Docker Compose:
+
+   ```bash
+   docker-compose up -d
+   ```
+
+4. Access the application:
 
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
 
-4. To stop the application:
+5. To stop the application:
    ```bash
    docker-compose down
    ```
@@ -220,9 +227,25 @@ The age prediction model is a neural network trained on health and demographic d
 
 ### Environment Variables
 
-1. Copy the `.env.example` file to `.env`:
+#### For Local Development
 
+1. Copy the `.env.example` file to `.env` in the project root:
+
+   ```bash
+   cp .env.example .env
    ```
+
+2. Edit the `.env` file and add your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_actual_api_key_here
+   ```
+
+#### For Docker Deployment
+
+1. Copy the `.env.example` file to `.env` in the app directory:
+
+   ```bash
+   cd app
    cp .env.example .env
    ```
 
@@ -232,10 +255,11 @@ The age prediction model is a neural network trained on health and demographic d
    OPENAI_API_KEY=your_actual_api_key_here
    ```
 
-3. When running with Docker Compose, make sure to pass the environment variables to the containers:
+3. Run Docker Compose with the .env file:
+   ```bash
+   docker-compose up -d
    ```
-   docker-compose up -d --env-file .env
-   ```
+   Note: No need to specify `--env-file .env` as it will automatically look for a .env file in the current directory.
 
 ## License
 
