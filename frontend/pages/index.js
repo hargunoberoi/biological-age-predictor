@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Head from "next/head";
 import axios from "axios";
 
@@ -151,83 +151,232 @@ const questions = [
 ];
 
 export default function Home() {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [currentAnswer, setCurrentAnswer] = useState("");
-  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const [prediction, setPrediction] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [showQuestions, setShowQuestions] = useState(false);
+  const [autofilledFields, setAutofilledFields] = useState([]);
+  const fileInputRef = useRef(null);
 
-  const currentQuestion = questions[currentQuestionIndex];
-
-  // Add a function to handle Enter key press
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault(); // Prevent default form submission
-      handleNext();
-    }
-  };
-
-  const handleNext = () => {
-    // Validate the current answer
-    if (!currentQuestion.validation(currentAnswer)) {
-      setError(currentQuestion.errorMessage);
-      return;
-    }
-
-    // Save the answer
-    const newAnswers = {
-      ...answers,
-      [currentQuestion.key]: currentAnswer,
-    };
-    setAnswers(newAnswers);
-
-    // Move to the next question or predict if it's the last question
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setCurrentAnswer("");
-      setError("");
-    } else {
-      // Submit all answers for prediction
-      predictAge(newAnswers);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setCurrentAnswer(answers[questions[currentQuestionIndex - 1].key] || "");
-      setError("");
-    }
+  const validateField = (id, value) => {
+    const question = questions.find((q) => q.id === id);
+    if (!question) return true;
+    return question.validation(value);
   };
 
   const handleChange = (e) => {
-    const value = e.target.value;
-    setCurrentAnswer(value);
-    setError("");
+    const { id, value } = e.target;
+    setFormData({
+      ...formData,
+      [id]: value,
+    });
+
+    // Clear error for this field if valid
+    if (validateField(id, value)) {
+      const newErrors = { ...errors };
+      delete newErrors[id];
+      setErrors(newErrors);
+    }
   };
 
-  const predictAge = async (allAnswers) => {
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/png")) {
+      setErrors({
+        ...errors,
+        image: "Please upload a PNG image",
+      });
+      return;
+    }
+
+    setImageFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Clear image error if exists
+    const newErrors = { ...errors };
+    delete newErrors.image;
+    setErrors(newErrors);
+  };
+
+  const handleAutofill = async () => {
+    if (!imageFile) {
+      setErrors({
+        ...errors,
+        image: "Please upload an image first",
+      });
+      return;
+    }
+
+    setImageLoading(true);
+    try {
+      // Create form data for file upload
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      // Call OpenAI O1 model API (replace with actual endpoint)
+      const response = await axios.post(`${API_URL}/analyze-image`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Update form with the received data
+      if (response.data) {
+        // Keep track of which fields were filled by autofill
+        const filledFields = [];
+
+        // Map the API response fields to form field IDs
+        const updatedData = {};
+
+        // Process each field from the API response
+        if (response.data.height) {
+          updatedData.height = response.data.height;
+          filledFields.push("height");
+        }
+        if (response.data.weight) {
+          updatedData.weight = response.data.weight;
+          filledFields.push("weight");
+        }
+        if (response.data.bloodPressure) {
+          updatedData.bloodPressure = response.data.bloodPressure;
+          filledFields.push("bloodPressure");
+        }
+        if (response.data.cholesterol) {
+          updatedData.cholesterol = response.data.cholesterol;
+          filledFields.push("cholesterol");
+        }
+        if (response.data.bmi) {
+          updatedData.bmi = response.data.bmi;
+          filledFields.push("bmi");
+        }
+        if (response.data.glucose) {
+          updatedData.glucose = response.data.glucose;
+          filledFields.push("glucose");
+        }
+        if (response.data.boneDensity) {
+          updatedData.boneDensity = response.data.boneDensity;
+          filledFields.push("boneDensity");
+        }
+        if (response.data.vision) {
+          updatedData.vision = response.data.vision;
+          filledFields.push("vision");
+        }
+        if (response.data.hearing) {
+          updatedData.hearing = response.data.hearing;
+          filledFields.push("hearing");
+        }
+        if (response.data.activity) {
+          updatedData.activity = response.data.activity;
+          filledFields.push("activity");
+        }
+        if (response.data.sleepDuration) {
+          updatedData.sleep = response.data.sleepDuration;
+          filledFields.push("sleep");
+        }
+        if (response.data.smokingStatus) {
+          updatedData.smoking = response.data.smokingStatus;
+          filledFields.push("smoking");
+        }
+        if (response.data.alcoholConsumption) {
+          updatedData.alcohol = response.data.alcoholConsumption;
+          filledFields.push("alcohol");
+        }
+        if (response.data.medicationCount) {
+          updatedData.medication = response.data.medicationCount;
+          filledFields.push("medication");
+        }
+        if (response.data.heartRate) {
+          updatedData.heartRate = response.data.heartRate;
+          filledFields.push("heartRate");
+        }
+
+        setFormData((prevData) => ({
+          ...prevData,
+          ...updatedData,
+        }));
+
+        // Update the list of autofilled fields
+        setAutofilledFields(filledFields);
+
+        // Expand the questions section to show the filled fields
+        setShowQuestions(true);
+      }
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      setErrors({
+        ...errors,
+        image: "Error analyzing image. Please try again.",
+      });
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate all fields
+    const newErrors = {};
+    let hasErrors = false;
+
+    questions.forEach((question) => {
+      const value = formData[question.id];
+      if (!value || !question.validation(value)) {
+        newErrors[question.id] = question.errorMessage;
+        hasErrors = true;
+      }
+    });
+
+    if (hasErrors) {
+      setErrors(newErrors);
+      return;
+    }
+
+    // Prepare data for API
+    const apiData = {};
+    questions.forEach((question) => {
+      apiData[question.key] = formData[question.id];
+    });
+
+    // Submit data
     setLoading(true);
     try {
       const response = await axios.post(`${API_URL}/predict`, {
-        features: allAnswers,
+        features: apiData,
       });
       setPrediction(response.data.predicted_age);
     } catch (error) {
       console.error("Error predicting age:", error);
-      setError("Error predicting age. Please try again.");
+      setErrors({
+        ...errors,
+        submit: "Error predicting age. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setCurrentQuestionIndex(0);
-    setAnswers({});
-    setCurrentAnswer("");
-    setError("");
+    setFormData({});
+    setErrors({});
     setPrediction(null);
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = null;
+    }
   };
 
   // Show the prediction result screen if we have a prediction
@@ -248,17 +397,15 @@ export default function Home() {
             <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
               Your Predicted Age
             </h2>
-            <div className="mt-8 mb-8">
-              <div className="text-6xl font-bold text-primary">
-                {Math.round(prediction)} years
-              </div>
-              <p className="mt-4 text-gray-600">
-                This is based on the health metrics you provided.
-              </p>
+            <p className="text-gray-600 mb-6">
+              Based on your health metrics, your predicted biological age is:
+            </p>
+            <div className="text-6xl font-bold text-indigo-600 mb-8">
+              {Math.round(prediction * 10) / 10} years
             </div>
             <button
               onClick={resetForm}
-              className="mt-6 w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Start Over
             </button>
@@ -269,7 +416,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+    <div className="min-h-screen flex flex-col bg-gray-50 p-6">
       <Head>
         <title>Age Predictor</title>
         <meta
@@ -279,98 +426,214 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
-        <div>
-          <div className="text-center mb-4">
-            <span className="text-6xl">⌛</span>
+      <main className="flex-grow flex flex-col items-center justify-center">
+        <div className="max-w-3xl w-full bg-white rounded-xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-extrabold text-gray-1000">⏳</h1>
+            <h1 className="text-3xl font-extrabold text-gray-1000">
+              Biological Age Predictor
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Fill out the form below to predict your biological age based on
+              health metrics
+            </p>
           </div>
-          <h2 className="text-2xl font-extrabold text-gray-900 text-center mb-2">
-            Age Predictor
-          </h2>
-          <p className="text-sm text-gray-600 text-center">
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-            <div
-              className="bg-primary h-2.5 rounded-full"
-              style={{
-                width: `${
-                  ((currentQuestionIndex + 1) / questions.length) * 100
-                }%`,
-              }}
-            ></div>
-          </div>
-        </div>
 
-        <div className="mt-8">
-          <div className="mb-6">
-            <label className="block text-gray-700 text-lg font-medium mb-2">
-              {currentQuestion.label}
-            </label>
-
-            {currentQuestion.type === "select" ? (
-              <select
-                value={currentAnswer}
-                onChange={handleChange}
-                className="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Collapsible questions section */}
+            <div className="border border-gray-200 rounded-md overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowQuestions(!showQuestions)}
+                className="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 focus:outline-none"
               >
-                <option value="" disabled>
-                  {currentQuestion.placeholder}
-                </option>
-                {currentQuestion.options.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type={currentQuestion.type}
-                value={currentAnswer}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                placeholder={currentQuestion.placeholder}
-                step={currentQuestion.step}
-                className="mt-1 block w-full py-3 px-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <span className="font-medium">Health Metrics Form Fields</span>
+                <svg
+                  className={`w-5 h-5 transition-transform ${
+                    showQuestions ? "transform rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  ></path>
+                </svg>
+              </button>
+
+              {showQuestions && (
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {questions.map((question) => (
+                    <div key={question.id} className="space-y-2">
+                      <label
+                        htmlFor={question.id}
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        {question.label}
+                      </label>
+
+                      {question.type === "select" ? (
+                        <select
+                          id={question.id}
+                          value={formData[question.id] || ""}
+                          onChange={handleChange}
+                          className={`block w-full rounded-md border ${
+                            errors[question.id]
+                              ? "border-red-300"
+                              : autofilledFields.includes(question.id)
+                              ? "border-green-300"
+                              : "border-gray-300"
+                          } shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2`}
+                        >
+                          <option value="" disabled>
+                            {question.placeholder}
+                          </option>
+                          {question.options.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={question.type}
+                          id={question.id}
+                          placeholder={question.placeholder}
+                          step={question.step}
+                          value={formData[question.id] || ""}
+                          onChange={handleChange}
+                          className={`block w-full rounded-md border ${
+                            errors[question.id]
+                              ? "border-red-300"
+                              : autofilledFields.includes(question.id)
+                              ? "border-green-300"
+                              : "border-gray-300"
+                          } shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2`}
+                        />
+                      )}
+
+                      {formData[question.id] &&
+                        !autofilledFields.includes(question.id) && (
+                          <p className="mt-1 text-sm text-orange-600 font-medium">
+                            *not updated - please verify this manually*
+                          </p>
+                        )}
+
+                      {!formData[question.id] && (
+                        <p className="mt-1 text-sm text-red-600 font-medium">
+                          not updated
+                        </p>
+                      )}
+
+                      {errors[question.id] && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors[question.id]}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Summary of filled fields */}
+            {Object.keys(formData).length > 0 && (
+              <div className="p-4 border border-gray-200 rounded-md bg-gray-50">
+                <h3 className="text-md font-medium text-gray-700 mb-2">
+                  Entered Data:
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  {questions
+                    .filter((q) => formData[q.id])
+                    .map((question) => (
+                      <div key={question.id} className="flex justify-between">
+                        <span className="font-medium">
+                          {question.label.replace("?", "")}:
+                        </span>
+                        <span>{formData[question.id]}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
             )}
 
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-          </div>
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex flex-col md:flex-row gap-4 items-start">
+                <div className="w-full md:w-1/2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Image for Autofill
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png"
+                      onChange={handleImageChange}
+                      className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-md file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-indigo-50 file:text-indigo-700
+                        hover:file:bg-indigo-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAutofill}
+                      disabled={!imageFile || imageLoading}
+                      className={`py-2 px-4 rounded-md text-sm font-medium text-white 
+                        ${
+                          !imageFile || imageLoading
+                            ? "bg-gray-400"
+                            : "bg-indigo-600 hover:bg-indigo-700"
+                        } 
+                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                    >
+                      {imageLoading ? "Processing..." : "Autofill"}
+                    </button>
+                  </div>
+                  {errors.image && (
+                    <p className="mt-1 text-sm text-red-600">{errors.image}</p>
+                  )}
+                </div>
 
-          <div className="flex justify-between mt-8">
-            <button
-              onClick={handlePrevious}
-              disabled={currentQuestionIndex === 0}
-              className={`py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
-                currentQuestionIndex === 0
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              Previous
-            </button>
-
-            <button
-              onClick={handleNext}
-              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {currentQuestionIndex === questions.length - 1
-                ? "Predict Age"
-                : "Next"}
-            </button>
-          </div>
-        </div>
-
-        {loading && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full flex flex-col items-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mb-4"></div>
-              <p className="text-gray-700">Predicting your age...</p>
+                {imagePreview && (
+                  <div className="w-full md:w-1/2">
+                    <p className="block text-sm font-medium text-gray-700 mb-2">
+                      Image Preview
+                    </p>
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-32 object-contain border border-gray-300 rounded-md"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+
+            {errors.submit && (
+              <div className="text-center text-red-600 text-sm mt-4">
+                {errors.submit}
+              </div>
+            )}
+
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                {loading ? "Processing..." : "Predict My Age"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }
