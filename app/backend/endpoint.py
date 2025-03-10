@@ -26,7 +26,7 @@ app = FastAPI(title="Age Predictor API",
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*", "http://client-demo.site", "https://client-demo.site"],  # Allow specific origins
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -182,27 +182,35 @@ async def analyze_image(image: UploadFile = File(...)):
         
         # Prepare the prompt for OpenAI
         prompt = """
-        This image may contain health-related information. 
-        Please extract the following health metrics if visible in the image:
-        - Height (in cm)
-        - Weight (in kg)
-        - Blood Pressure (systolic/diastolic)
-        - Cholesterol Level (in mg/dL)
-        - BMI
-        - Blood Glucose Level (in mg/dL)
-        - Bone Density (in g/cm²)
-        - Vision Sharpness (0.1-1.0)
-        - Hearing Ability (in dB)
-        - Activity Level (sedentary, light, moderate, active, very active)
-        - Sleep Duration (in hours)
-        - Smoking Status (yes, no)
-        - Alcohol Consumption (none, light, moderate, heavy)
-        - Medication Count (number)
-        - Heart Rate (BPM)
-        
-        Return only the values you can confidently extract in a JSON format with the following keys:
-        height, weight, bloodPressure, cholesterol, bmi, glucose, boneDensity, vision, hearing, activity, sleepDuration, smokingStatus, alcoholConsumption, medicationCount, heartRate
-        
+        Role: You are an advanced OCR-based AI model specializing in extracting structured information from scanned documents and images with high accuracy.
+
+        Instructions: Extract the following health-related features from an image or document and return them in a structured JSON format. Ensure that each extracted value corresponds to the correct feature and replace missing or unreadable values with a placeholder (e.g., `null`). Maintain consistency in data formatting.
+
+        Context: The document or image contains structured health-related data with specific attributes, including biometric measurements, blood test results, lifestyle indicators, and cognitive assessments. Some values may be numerical, while others may be categorical. The goal is to extract these values accurately and return them in a well-structured JSON format.
+
+        Example Exchange:
+        - **User Input:** "Extract health data from this document."
+        - **Model Output:**
+        ```json
+        {
+        "features": {
+            "Height (cm)": null,
+            "Weight (kg)": null,
+            "Blood Pressure (s/d)": null,
+            "Cholesterol Level (mg/dL)": null,
+            "BMI": null,
+            "Blood Glucose Level (mg/dL)": null,
+            "Bone Density (g/cm²)": null,
+            "Vision Sharpness": null,
+            "Hearing Ability (dB)": null,
+            "Physical Activity Level": null,
+            "Chronic Diseases": null,
+            "Medication Use": null,
+            "Cognitive Function": null,
+            "Education Level": null
+        }
+        }
+        Return only the values you can confidently extract in a JSON format.
         Include only the fields that you can extract from the image. If you cannot determine a value, do not include that field in the response.
         """
         
