@@ -184,7 +184,6 @@ Role: You are an advanced OCR-based AI model specializing in extracting structur
         - **Model Output:**
         ```json
         {
-        "features": {
             "Height (cm)": null,
             "Weight (kg)": null,
             "Blood Pressure (s/d)": null,
@@ -199,7 +198,6 @@ Role: You are an advanced OCR-based AI model specializing in extracting structur
             "Medication Use": null,
             "Cognitive Function": null,
             "Education Level": null
-        }
         }
         Return only the values you can confidently extract in a JSON format.
         Include only the fields that you can extract from the image. If you cannot determine a value, do not include that field in the response.

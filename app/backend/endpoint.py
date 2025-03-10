@@ -193,7 +193,6 @@ async def analyze_image(image: UploadFile = File(...)):
         - **Model Output:**
         ```json
         {
-        "features": {
             "Height (cm)": null,
             "Weight (kg)": null,
             "Blood Pressure (s/d)": null,
@@ -208,7 +207,6 @@ async def analyze_image(image: UploadFile = File(...)):
             "Medication Use": null,
             "Cognitive Function": null,
             "Education Level": null
-        }
         }
         Return only the values you can confidently extract in a JSON format.
         Include only the fields that you can extract from the image. If you cannot determine a value, do not include that field in the response.

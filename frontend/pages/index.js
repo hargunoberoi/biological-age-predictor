@@ -240,66 +240,13 @@ export default function Home() {
         // Map the API response fields to form field IDs
         const updatedData = {};
 
-        // Process each field from the API response
-        if (response.data.height) {
-          updatedData.height = response.data.height;
-          filledFields.push("height");
-        }
-        if (response.data.weight) {
-          updatedData.weight = response.data.weight;
-          filledFields.push("weight");
-        }
-        if (response.data.bloodPressure) {
-          updatedData.bloodPressure = response.data.bloodPressure;
-          filledFields.push("bloodPressure");
-        }
-        if (response.data.cholesterol) {
-          updatedData.cholesterol = response.data.cholesterol;
-          filledFields.push("cholesterol");
-        }
-        if (response.data.bmi) {
-          updatedData.bmi = response.data.bmi;
-          filledFields.push("bmi");
-        }
-        if (response.data.glucose) {
-          updatedData.glucose = response.data.glucose;
-          filledFields.push("glucose");
-        }
-        if (response.data.boneDensity) {
-          updatedData.boneDensity = response.data.boneDensity;
-          filledFields.push("boneDensity");
-        }
-        if (response.data.vision) {
-          updatedData.vision = response.data.vision;
-          filledFields.push("vision");
-        }
-        if (response.data.hearing) {
-          updatedData.hearing = response.data.hearing;
-          filledFields.push("hearing");
-        }
-        if (response.data.activity) {
-          updatedData.activity = response.data.activity;
-          filledFields.push("activity");
-        }
-        if (response.data.sleepDuration) {
-          updatedData.sleep = response.data.sleepDuration;
-          filledFields.push("sleep");
-        }
-        if (response.data.smokingStatus) {
-          updatedData.smoking = response.data.smokingStatus;
-          filledFields.push("smoking");
-        }
-        if (response.data.alcoholConsumption) {
-          updatedData.alcohol = response.data.alcoholConsumption;
-          filledFields.push("alcohol");
-        }
-        if (response.data.medicationCount) {
-          updatedData.medication = response.data.medicationCount;
-          filledFields.push("medication");
-        }
-        if (response.data.heartRate) {
-          updatedData.heartRate = response.data.heartRate;
-          filledFields.push("heartRate");
+        // Process the response using the question keys
+        for (const question of questions) {
+          const apiValue = response.data[question.key];
+          if (apiValue !== undefined) {
+            updatedData[question.id] = apiValue;
+            filledFields.push(question.id);
+          }
         }
 
         setFormData((prevData) => ({
